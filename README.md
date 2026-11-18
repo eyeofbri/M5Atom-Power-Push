@@ -52,13 +52,15 @@ The setup hotspot is only requested when saved Wi-Fi credentials are absent. To 
 
 ## 4. Calibrate the servo
 
-In **Settings → Servo Calibration**, choose a rest angle and press angle using the sliders or number fields. Use Test Rest and Test Press with the linkage disconnected. Test movements last 500 ms before returning to the stored rest position. Both initial angles are 90°; normal actuation is disabled until distinct valid angles are saved.
+In **Settings → Servo Calibration**, choose a rest angle and press angle using the sliders or number fields. Use Test Rest and Test Press with the linkage disconnected. Test movements last 500 ms before returning to the stored rest position. Both initial angles are 45° with the default travel setting; normal actuation is disabled until distinct valid angles are saved.
 
 Choose a press duration (100–2,000 ms; default 500 ms) and save calibration. Start with small movements. Verify the servo returns to rest reliably before attaching the mechanism, then check clearance and force with the mount installed. A short press on the physical ATOM button also triggers the configured cycle.
 
-The default range is 1,000–2,000 µs at 50 Hz, following the [M5Stack SG90 documentation](https://docs.m5stack.com/en/accessory/SG90_Servo). Power Push uses 0–180° for nominal positions; M5Stack describes the same positions as −90° to +90° around the center. A 1,500 µs pulse corresponds to 90° in Power Push. Narrowing the pulse range narrows the available angle inputs and highlights the permitted arc instead of rescaling it to 180°. These are nominal commands, not measured shaft positions.
+The default range is 1,000–2,000 µs at 50 Hz, following the [M5Stack SG90 documentation](https://docs.m5stack.com/en/accessory/SG90_Servo). Power Push defaults to an estimated 90° travel across this pulse range, based on testing one servo; a 1,500 µs pulse corresponds to 45°. Individual servos may differ. Setting measured travel to 0 restores the nominal manufacturer mapping (0–180° across 1,000–2,000 µs). These are estimated or nominal commands, not measured shaft positions.
 
-**WARNING:** M5Stack warns that pulses outside 1,000–2,000 µs may damage its SG90. For other compatible servos, advanced settings allow 500–2,400 µs and display pulse widths directly rather than inventing physical angles. Do not use extended values with the M5Stack SG90. Reset buttons restore the documented defaults. Saving changed pulse limits resets positions to 1,500 µs and disables normal actuation until recalibration. Stop if the servo binds, buzzes or heats up.
+If the actual rotation differs, open **Advanced PWM calibration → Measured servo travel**. With the linkage disconnected and the servo within its rated pulse limits, measure the rotation between the two configured PWM endpoints and enter that total (10–180°). For example, if 1,000–2,000 µs gives 90° of travel, enter 90. The angle inputs then use 0–90° relative to the minimum pulse and the gauge shows the corresponding estimated travel. The existing pulse positions are retained when only the scale changes. The estimate assumes linear motion; there is no shaft feedback. Enter 0 to restore the unmeasured display. Changing the PWM endpoints clears the measurement; measure again after saving the range. Reset restores 90° for the factory pulse range or 0 for other ranges. Previously saved V3 measurements are retained.
+
+**WARNING:** M5Stack warns that pulses outside 1,000–2,000 µs may damage its SG90. For other compatible servos, advanced settings allow 500–2,400 µs and display pulse widths directly unless a measured travel is provided for compatible hardware. Do not use extended values with the M5Stack SG90. Reset buttons restore the documented defaults. Saving changed pulse limits resets positions to 1,500 µs and disables normal actuation until recalibration. Stop if the servo binds, buzzes or heats up.
 
 When upgrading from v0.1.4, the firmware converts valid legacy angle commands to their previous pulse widths; the new readouts may differ without a corresponding change in commanded pulse. Disconnect the linkage before uploading and verify both positions before use. If you previously widened the range on a M5Stack SG90, consider restoring the documented defaults with the linkage disconnected.
 
@@ -78,9 +80,9 @@ The optional target monitor checks TCP port 445; a failed connection does not pr
 - This interface has no authentication. Use only on a trusted local network; never expose it to the internet. The provisioning hotspot is open.
 - Servo release is software-controlled, not a hardware failsafe. Verify timing, network interruption behavior and safe rest before use. No long power-off hold or battery monitoring is provided.
 
-## Release v0.1.5
+## Release v0.1.6
 
-Manufacturer-based nominal angle mapping, dynamic slider limits and gauge arcs, pulse-width mode for compatible extended-range servos, red PWM safety warning, and updated Grove wiring instructions. Existing calibration is converted from legacy commands to pulse widths; the first new calibration save stores a separate record. The old calibration keys remain untouched (downgrading will not import newer calibration changes).
+Optional measured servo travel, stored with calibration. The prior PWM positions remain unchanged when only the travel scale changes. Existing v0.1.5 pulse records are loaded without alteration; new saves use a V3 record. Older firmware does not read V3 records.
 
 Firmware compilation and physical validation of this release are pending.
 
