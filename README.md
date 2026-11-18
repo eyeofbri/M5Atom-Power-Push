@@ -1,5 +1,5 @@
 # M5Atom-Power-Push
-v0.1.2 — calibration controls and visual feedback. Firmware build and hardware validation pending.
+v0.1.3 — Enhanced Dashboard, Calibration & System Maintenance. Firmware build and hardware validation pending.
 
 ## Build
 Install PlatformIO, open this directory, connect the ATOM Lite over USB, run `pio run -t upload`. Serial monitor: `pio device monitor`.
@@ -14,3 +14,8 @@ Wi-Fi sleep is disabled; mDNS is restarted after reconnection or IP changes and 
 
 ## v0.1.2
 Angle sliders select values without moving the servo. Numerical entries are checked inline and clamped on change; test/save actions require valid whole numbers. The backend independently validates the command range. The 0–180 degree command range is not a guarantee of mechanical travel. Existing networking and settings are preserved.
+
+## v0.1.3
+Responsive blue navigation, lime actuator, live status and 5-second success notifications, compact Wi-Fi panel and header RSSI, animated commanded-angle SVG gauges, independent device and calibration saves/discard. Setup AP is requested only when no stored Wi-Fi credentials exist; normal reconnect uses station mode. Manual restart and optional uptime restart (disabled by default; selectable intervals from 5 minutes to 30 days) defer until idle. Uptime uses the ESP 64-bit timer. System displays minimum free heap and recovery guidance.
+
+PWM range defaults to the previous 1000–2000 microseconds. Changing endpoints requires confirmation with linkage disconnected and resets calibration to 90 degrees, disabling normal actuation until new distinct angles are saved. Expand in small increments and never force mechanical travel; angle is a command, not measured position. Existing settings are retained on normal upload. Test first with linkage disconnected. Setup AP is open when provisioning; use only a trusted network. Target checks remain TCP port 445. Firmware compilation and hardware tests pending; Chromium UI tested with simulated API responses, not an actual device.
