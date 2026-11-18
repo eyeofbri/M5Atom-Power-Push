@@ -1,0 +1,26 @@
+#include <Arduino.h>
+#include <WiFi.h>
+#include <WebServer.h>
+#include <ESPmDNS.h>
+#include <Preferences.h>
+#include <ESP32Servo.h>
+#include <ArduinoJson.h>
+#include <WiFiManager.h>
+#include <Adafruit_NeoPixel.h>
+#include "ui.h"
+WebServer server(80); Preferences prefs; Servo servo; WiFiManager wm; Adafruit_NeoPixel pixel(1,27,NEO_GRB+NEO_KHZ800);
+String host="powerpush", label="Switch", target=""; int rest=90, press=90, hold=500; bool configured=false, active=false, preview=false; uint32_t started=0, duration=0, lastProbe=0; int reach=-1; bool mdns=false; bool reboot=false; uint32_t rebootAt=0;
+void reply(int status,const char* msg){JsonDocument d; d["message"]=msg; String s; serializeJson(d,s); server.send(status,"application/json",s);}
+bool validHost(String s){if(!s.length()||s.length()>63||s[0]=='-'||s[s.length()-1]=='-')return false; for(char c:s)if(!((c>='a'&&c<='z')||(c>='0'&&c<='9')||c=='-'))return false;return true;}
+void release(){servo.write(rest);active=false;preview=false;}
+void moveFor(int angle,int ms,bool test){servo.write(angle);started=millis();duration=ms;active=true;preview=test;}
+void state(){JsonDocument d; d["host"]=host;d["label"]=label;d["target"]=target;d["rest"]=rest;d["press"]=press;d["hold"]=hold;d["configured"]=configured;d["active"]=active;d["remaining"]=active?max(0,(int)(duration-(millis()-started))):0;d["duration"]=duration;d["rssi"]=WiFi.RSSI();d["ip"]=WiFi.localIP().toString();d["ssid"]=WiFi.SSID();d["reach"]=reach;d["uptime"]=millis()/1000;d["heap"]=ESP.getFreeHeap();d["mdns"]=mdns;String s;serializeJson(d,s);server.send(200,"application/json",s);}
+bool body(JsonDocument &d){if(!server.hasArg("plain")||deserializeJson(d,server.arg("plain"))){reply(400,"Invalid JSON");return false;}return true;}
+void setup(){Serial.begin(115200);pinMode(39,INPUT);pixel.begin();pixel.setBrightness(20);prefs.begin("powerpush",false);host=prefs.getString("host","powerpush");label=prefs.getString("label","Switch");target=prefs.getString("target","");rest=prefs.getInt("rest",90);press=prefs.getInt("press",90);hold=prefs.getInt("hold",500);configured=prefs.getBool("ready",false);servo.setPeriodHertz(50);servo.attach(26,1000,2000);servo.write(rest);WiFi.mode(WIFI_STA);WiFi.setHostname(host.c_str());wm.setConfigPortalTimeout(180);if(!wm.autoConnect("PowerPush-Setup")){ESP.restart();}mdns=MDNS.begin(host.c_str());if(mdns)MDNS.addService("http","tcp",80);
+server.on("/",HTTP_GET,[]{server.send_P(200,"text/html",UI);});server.on("/api/state",HTTP_GET,state);
+server.on("/api/press",HTTP_POST,[]{if(!configured){reply(409,"Calibrate first");return;}if(active){reply(409,"Actuator busy");return;}moveFor(press,hold,false);reply(200,"Press started");});
+server.on("/api/release",HTTP_POST,[]{release();reply(200,"Released");});
+server.on("/api/test",HTTP_POST,[]{JsonDocument d;if(!body(d))return;if(active){reply(409,"Actuator busy");return;}if(!d["angle"].is<int>()){reply(400,"Invalid angle");return;}int a=d["angle"];if(a<0||a>180){reply(400,"Invalid angle");return;}moveFor(a,500,true);reply(200,"Testing angle");});
+server.on("/api/settings",HTTP_POST,[]{if(active){reply(409,"Actuator busy");return;}JsonDocument d;if(!body(d))return;String h=d["host"]|"", l=d["label"]|"",t=d["target"]|"";h.toLowerCase();l.trim();t.trim();int r=d["rest"]|-1,p=d["press"]|-1,m=d["hold"]|-1;IPAddress ip;if(!validHost(h)||!l.length()||l.length()>40||(t.length()&&!ip.fromString(t))||r<0||r>180||p<0||p>180||r==p||m<100||m>2000){reply(400,"Check hostname, label, target IPv4, angles and duration");return;}bool changed=h!=host;host=h;label=l;target=t;rest=r;press=p;hold=m;configured=true;reach=-1;prefs.putString("host",host);prefs.putString("label",label);prefs.putString("target",target);prefs.putInt("rest",rest);prefs.putInt("press",press);prefs.putInt("hold",hold);prefs.putBool("ready",true);release();reply(200,changed?"Saved; restarting for hostname change":"Saved");if(changed){reboot=true;rebootAt=millis();}});
+server.begin();}
+void loop(){if(active&&millis()-started>=duration)release();server.handleClient();if(active&&millis()-started>=duration)release();if(reboot&&!active&&millis()-rebootAt>800)ESP.restart();static bool previous=true;static uint32_t down=0;bool b=digitalRead(39);if(previous&&!b)down=millis();if(!previous&&b){if(millis()-down>5000&&!active){wm.resetSettings();ESP.restart();}else if(millis()-down<1000&&configured&&!active)moveFor(press,hold,false);}previous=b; if(!active&&target.length()&&millis()-lastProbe>10000){lastProbe=millis();IPAddress ip;ip.fromString(target);WiFiClient client;reach=client.connect(ip,445,150)?1:0;client.stop();}static uint32_t led=0;if(millis()-led>150){led=millis();pixel.setPixelColor(0,active?pixel.Color(255,120,0):WiFi.status()==WL_CONNECTED?pixel.Color(0,150,80):pixel.Color(180,0,0));pixel.show();}delay(2);}
