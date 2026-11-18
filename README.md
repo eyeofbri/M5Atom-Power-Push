@@ -10,7 +10,8 @@ The device hosts its own responsive retro-inspired dashboard at `http://powerpus
 
 - [M5Stack ATOM Lite ESP32 development kit](https://shop.m5stack.com/products/atom-lite-esp32-development-kit)
 - [M5Stack SG90 micro servo](https://shop.m5stack.com/products/sg90-servo)
-- [4-pin buckled Grove cable](https://shop.m5stack.com/products/4pin-buckled-grove-cable) — connects the ATOM Lite to the adapter included with the M5Stack servo
+- [4-pin buckled Grove cable](https://shop.m5stack.com/products/4pin-buckled-grove-cable) — connects the ATOM Lite to the Grove 2 Servo adapter
+- **Grove 2 Servo** — the adapter included with the M5Stack SG90 servo package used in this build
 - USB-C data cable and power for the ATOM
 - Regulated 5 V servo supply capable of handling the servo's stall current, plus suitable wires
 - A mount and servo horn/linkage suited to your particular button
@@ -18,7 +19,11 @@ The device hosts its own responsive retro-inspired dashboard at `http://powerpus
 
 ## 1. Wire it up
 
-For the plug-in build used in this project, connect the ATOM Lite Grove port to the included servo adapter using the 4-pin Grove cable, then connect the adapter to the servo. Check the signal (GPIO 26), 5 V and ground routing before applying power. This configuration worked in the original build; if the servo draws more current than the ATOM/USB supply can provide, use a separately regulated servo supply with a shared ground as described below. Do not backfeed the ATOM through the adapter.
+For the plug-in build used in this project, connect the ATOM Lite Grove port to the included **Grove 2 Servo** adapter using the 4-pin Grove cable, then connect the adapter to the servo.
+
+Connection order: `ATOM Lite → 4-pin Grove cable → Grove 2 Servo → SG90 servo`.
+
+Check the signal (GPIO 26), 5 V and ground routing before applying power. This configuration worked in the original build; if the servo draws more current than the ATOM/USB supply can provide, use a separately regulated servo supply with a shared ground as described below. Do not backfeed the ATOM through the adapter.
 
 Leave the servo horn/linkage disconnected from the target switch during setup and calibration. Turn power off before wiring.
 
